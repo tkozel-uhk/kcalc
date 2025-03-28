@@ -1,7 +1,6 @@
 package cz.uhk.fimcalc
 
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
@@ -20,14 +19,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -54,18 +51,41 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun Calculator(modifier: Modifier = Modifier) {
-    val displayValue = remember {
+    val displayValue = rememberSaveable {
         mutableStateOf("0")
     }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Top
     ) {
         CalculatorDisplay(displayValue.value)
-        CalculatorButtons() {
-            displayValue.value += it
+        CalculatorButtons {
+            //TODO C, M, DEL, AC ...
+            if (it == "=") {
+                displayValue.value = eval(displayValue.value)
+            } else {
+                displayValue.value += it
+            }
         }
     }
+}
+
+fun eval(value: String): String {
+    val values = value.split("+", "-", "*", "÷")
+    val operators = value.filter { it in "+-*/" }
+
+    var result = values[0].toDouble()
+    for (i in 1 until values.size) {
+        val operator = operators[i - 1]
+        val nextValue = values[i].toDouble()
+        when (operator) {
+            '+' -> result += nextValue
+            '-' -> result -= nextValue
+            '*' -> result *= nextValue
+            '÷' -> result /= nextValue
+        }
+    }
+    return result.toString()
 }
 
 @Composable
@@ -86,15 +106,15 @@ fun CalculatorButtons(onClick: (text: String) -> Unit) {
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             for (bt in btRow) {
-            CalculatorButton(text = bt, onClick = { onClick(bt) },
-                modifier = Modifier
-                    .width(80.dp)
-                    .height(80.dp)
-            )
+                CalculatorButton(
+                    text = bt, onClick = { onClick(bt) },
+                    modifier = Modifier
+                        .width(80.dp)
+                        .height(80.dp)
+                )
+            }
         }
     }
-    }
-
 }
 
 @Composable
@@ -131,7 +151,7 @@ fun CalculatorDisplay(value: String, modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "$value",
+                text = value,
                 fontSize = 36.sp,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold
