@@ -15,9 +15,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,16 +36,18 @@ import androidx.compose.ui.unit.sp
 import cz.uhk.fimcalc.ui.theme.FimCalcTheme
 
 class MainActivity : ComponentActivity() {
+    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             FimCalcTheme {
-                // A surface container using the 'background' color from the theme
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    Calculator()
+                // Scaffold je zakladni layout aplikace s horni listou a obsahem
+                Scaffold(
+                    topBar = {
+                        TopAppBar(title = { Text("FIM Calc") })
+                    }
+                ) { innerPadding ->
+                    Calculator(Modifier.padding(innerPadding))
                 }
             }
         }
@@ -55,16 +60,24 @@ fun Calculator(modifier: Modifier = Modifier) {
         mutableStateOf("0")
     }
     Column(
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
         CalculatorDisplay(displayValue.value)
         CalculatorButtons {
-            //TODO C, M, DEL, AC ...
-            if (it == "=") {
-                displayValue.value = eval(displayValue.value)
-            } else {
-                displayValue.value += it
+            //TODO Memory btn, operator na konci ...
+            displayValue.value = when {
+                it == "="   -> eval(displayValue.value)
+                it == "AC"  -> "0"
+                it == "⌫"   -> {
+                    if (displayValue.value.length > 1) displayValue.value.dropLast(1)
+                    else "0"
+                }
+                else -> {
+                    if (displayValue.value != "0") displayValue.value + it
+                    else it
+                }
             }
         }
     }
@@ -72,7 +85,7 @@ fun Calculator(modifier: Modifier = Modifier) {
 
 fun eval(value: String): String {
     val values = value.split("+", "-", "*", "÷")
-    val operators = value.filter { it in "+-*/" }
+    val operators = value.filter { it in "+-*÷" }
 
     var result = values[0].toDouble()
     for (i in 1 until values.size) {
@@ -92,10 +105,10 @@ fun eval(value: String): String {
 fun CalculatorButtons(onClick: (text: String) -> Unit) {
     val btLabels = listOf(
         "AC", "⌫", "M", "+",
-        "7",  "8", "9", "-",
-        "4",  "5", "6", "*",
-        "1",  "2", "3", "÷",
-        "C",  "0", ".", "="
+        "7", "8", "9", "-",
+        "4", "5", "6", "*",
+        "1", "2", "3", "÷",
+        "C", "0", ".", "="
     )
     val btWin = btLabels.windowed(4, 4, true)
     for (btRow in btWin) {
